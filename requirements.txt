@@ -1,0 +1,7 @@
+python-dotenv==1.0.0
+pydantic>=2.6.0,<3.0.0
+docling>=2.31.0
+openai>=1.65.0
+llama-stack-client==0.2.2
+pdf2image==1.17.0
+aioboto3==14.2.0
