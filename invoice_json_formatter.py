@@ -130,6 +130,34 @@ def extract_table_columns(json_data: dict, target_column_names: list[str]):
 
     return all_extracted_rows
 
+def extract_invoice_number(json_data: dict) -> str:
+    """
+    Extracts the invoice number from the DoclingDocument JSON data.
+    
+    Args:
+        json_data (dict): The JSON data to process.
+        
+    Returns:
+        str: The extracted invoice number, or an empty string if not found.
+    """
+    # Look for invoice number in the texts array
+    texts = json_data.get('texts', [])
+    
+    for text_entry in texts:
+        text = text_entry.get('text', '')
+        
+        # Check if this text contains an invoice number
+        if 'invoice no:' in text.lower() or 'invoice number:' in text.lower():
+            # Extract the invoice number using string manipulation
+            parts = text.split(':', 1)
+            if len(parts) > 1:
+                # Return the invoice number part, stripped of whitespace
+                return parts[1].strip()
+    
+    # If no invoice number was found, log a warning and return empty string
+    logger.warning("No invoice number found in the document")
+    return ""
+
 # --- Main Processing Function ---
 async def process_file(key: str, data: bytes):
     """
@@ -140,7 +168,8 @@ async def process_file(key: str, data: bytes):
         data (bytes): The file content as bytes
         
     Returns:
-        list[dict]: Extracted line items or None if processing failed
+        dict: A dictionary containing the invoice number and extracted line items,
+              or None if processing failed
     """
     logger.info(f"Processing {key}: {len(data)} bytes")
     
@@ -154,6 +183,11 @@ async def process_file(key: str, data: bytes):
             json_data = json.loads(data.decode('utf-8'))
             logger.info(f"Successfully parsed JSON from {filename}")
             
+            # Extract invoice number
+            invoice_number = extract_invoice_number(json_data)
+            if invoice_number:
+                logger.info(f"Extracted invoice number: {invoice_number}")
+            
             # Extract line items using configured target columns
             line_items = extract_table_columns(json_data, TARGET_COLUMNS)
             
@@ -162,7 +196,11 @@ async def process_file(key: str, data: bytes):
             else:
                 logger.info(f"Extracted {len(line_items)} line items from {filename}")
             
-            return line_items
+            # Return structured result with invoice number and line items
+            return {
+                "invoice_number": invoice_number,
+                "items": line_items
+            }
             
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON from {filename}: {str(e)}")
