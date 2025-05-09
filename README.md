@@ -204,3 +204,13 @@ The results should land in the json-line-items bucket
 mc cp myminio/invoices/json-line-items/invoice_2.json .
 ```
 
+Monitor
+
+```bash
+while true; do
+  clear
+  echo "File count in invoices/intake:"
+  mc ls --recursive myminio/invoices/json-line-items | wc -l
+  sleep 3
+done
+```
